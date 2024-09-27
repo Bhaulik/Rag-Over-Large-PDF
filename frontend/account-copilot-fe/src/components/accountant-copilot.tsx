@@ -11,6 +11,12 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 type SearchResult = {
   answer: string;
@@ -18,17 +24,27 @@ type SearchResult = {
     content: string;
     reference: string;
   }>;
-  followUpQuestions: string[]; // Keep this if you want to add it in the future
+  followUpQuestions: string[];
 };
+
+type LoadingStep = "reading" | "referencing" | "summarizing";
 
 export function AccountantCopilot() {
   const [query, setQuery] = useState("");
   const [result, setResult] = useState<SearchResult | null>(null);
   const [loading, setLoading] = useState(false);
+  const [loadingStep, setLoadingStep] = useState<LoadingStep>("reading");
 
   const handleSearch = async () => {
     setLoading(true);
+    setLoadingStep("reading");
     try {
+      // Simulate different loading steps
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      setLoadingStep("referencing");
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      setLoadingStep("summarizing");
+
       const response = await fetch("/api/query", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -68,26 +84,10 @@ export function AccountantCopilot() {
     ));
   };
 
-  const sampleResult: SearchResult = {
-    answer:
-      "1. Direct Answer: Filing taxes for yacht expenses involves identifying deductible expenses such as maintenance, rental, insurance, and travel costs if used for business. These must be reported on the prescribed form within 12 months after the filing-due date.\n\n2. Explanation: Taxpayers can deduct certain yacht-related expenses if not reimbursed. These include maintenance, rental, insurance, and business travel costs. All expenses must be reported on the prescribed form within the specified timeframe.\n\n3. Relevant Example: A taxpayer using a yacht for client meetings can deduct fuel, maintenance, insurance, and depreciation costs. These must be reported in detail on the tax form within the given deadline.\n\n4. Additional Information: Tax laws may vary by jurisdiction. Consult a tax professional for accurate and compliant filing.\n\n5. References: Information based on Excerpts 1, 2, 3, and 5.",
-    excerpts: [
-      {
-        content:
-          "to the extent that the taxpayer has not been reimbursed, and is not entitled to be reimbursed in respect thereof;\nMotor vehicle and aircraft costs\nwhere a deduction may be made under paragraph 8(1)(f), 8(1)(h) or 8(1)(h.1) in computing the taxpayer's income from an office or employment for a taxation year,\nany interest paid by the taxpayer in the year on borrowed money used for the purpose of acquiring, or on an amount payable for the acquisition of, property that is\na motor vehicle that is used, or\nan aircraft that is required for use\nin the performance of the duties of the taxpayer's office or employment, and\nsuch part, if any, of the capital cost to the taxpayer of\na motor vehicle that is used, or\nan aircraft that is required for use\nin the performance of the duties of the office or employment as is allowed by regulation;",
-        reference: "1",
-      },
-      {
-        content:
-          "amounts expended by the taxpayer before the end of the year for the maintenance, rental or insurance of the instrument for that period, except to the extent that the amounts are otherwise deducted in computing the taxpayer's income for any taxation year, and\nsuch part, if any, of the capital cost to the taxpayer of the instrument as is allowed by regulation;",
-        reference: "2",
-      },
-    ],
-    followUpQuestions: [
-      "What specific documentation is required for yacht expense deductions?",
-      "Are there limits to the amount of yacht expenses that can be deducted?",
-      "How does the IRS determine if a yacht is used primarily for business or personal use?",
-    ],
+  const loadingMessages = {
+    reading: "AI is reading the tax bill document",
+    referencing: "Figuring out the references relevant to what you want",
+    summarizing: "Summarizing the information for you",
   };
 
   return (
@@ -105,50 +105,12 @@ export function AccountantCopilot() {
           {loading ? "Searching..." : "Search"}
         </Button>
       </div>
-      <Tabs defaultValue="sample" className="w-full">
+      <Tabs defaultValue="result" className="w-full">
         <TabsList>
-          {/* <TabsTrigger value="sample">Sample Output</TabsTrigger> */}
           <TabsTrigger value="result" disabled={!result}>
             Search Result
           </TabsTrigger>
         </TabsList>
-        <TabsContent value="sample">
-          <Card>
-            <CardHeader>
-              <CardTitle>Sample Output: Yacht Expense Deductions</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="mb-4">{renderAnswer(sampleResult.answer)}</div>
-              <Accordion type="single" collapsible className="w-full">
-                <AccordionItem value="excerpts">
-                  <AccordionTrigger>View Source Excerpts</AccordionTrigger>
-                  <AccordionContent>
-                    {sampleResult.excerpts.map((excerpt, index) => (
-                      <Card key={index} className="mb-2">
-                        <CardContent className="p-4">
-                          <p className="mb-2">{excerpt.content}</p>
-                          <p className="text-sm text-gray-500">
-                            Reference: {excerpt.reference}
-                          </p>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
-              <div className="mt-4">
-                <h3 className="font-semibold mb-2">Follow-up Questions</h3>
-                <ul className="list-disc pl-5">
-                  {sampleResult.followUpQuestions.map((question, index) => (
-                    <li key={index} className="mb-1">
-                      {question}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
         <TabsContent value="result">
           {result && (
             <Card>
@@ -189,6 +151,22 @@ export function AccountantCopilot() {
           )}
         </TabsContent>
       </Tabs>
+
+      <Dialog open={loading} onOpenChange={setLoading}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Processing Your Query</DialogTitle>
+          </DialogHeader>
+          <div className="flex items-center justify-center p-4">
+            <div className="text-center">
+              <p className="text-lg font-semibold mb-2">
+                {loadingMessages[loadingStep]}
+              </p>
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
