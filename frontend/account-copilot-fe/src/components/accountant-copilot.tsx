@@ -17,6 +17,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 
 type SearchResult = {
   answer: string;
@@ -34,8 +36,14 @@ export function AccountantCopilot() {
   const [result, setResult] = useState<SearchResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [loadingStep, setLoadingStep] = useState<LoadingStep>("reading");
+  const [disclaimerAccepted, setDisclaimerAccepted] = useState(false);
 
   const handleSearch = async () => {
+    if (!disclaimerAccepted) {
+      alert("Please accept the disclaimer before proceeding.");
+      return;
+    }
+
     setLoading(true);
     setLoadingStep("reading");
     try {
@@ -62,11 +70,10 @@ export function AccountantCopilot() {
           content: excerpt.content,
           reference: excerpt.reference,
         })),
-        followUpQuestions: [], // Your API doesn't provide this, so we'll leave it empty
+        followUpQuestions: [],
       });
     } catch (error) {
       console.error("Error fetching search results:", error);
-      // You might want to set an error state here to display to the user
     } finally {
       setLoading(false);
     }
@@ -93,6 +100,34 @@ export function AccountantCopilot() {
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold mb-4">Accountant Copilot</h1>
+
+      <Card className="mb-6">
+        <CardContent className="pt-6">
+          <p className="text-sm text-gray-600 mb-4">
+            Disclaimer: This AI assistant provides general information based on
+            the tax documents it has been trained on. The information provided
+            should not be considered as professional financial or legal advice.
+            Please consult with a qualified accountant or tax professional for
+            specific advice tailored to your individual circumstances.
+          </p>
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="disclaimer"
+              checked={disclaimerAccepted}
+              onCheckedChange={(checked) =>
+                setDisclaimerAccepted(checked as boolean)
+              }
+            />
+            <Label
+              htmlFor="disclaimer"
+              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+            >
+              I understand and accept the disclaimer
+            </Label>
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="flex gap-2 mb-4">
         <Input
           type="text"
@@ -100,8 +135,12 @@ export function AccountantCopilot() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           className="flex-grow"
+          disabled={!disclaimerAccepted}
         />
-        <Button onClick={handleSearch} disabled={loading}>
+        <Button
+          onClick={handleSearch}
+          disabled={loading || !disclaimerAccepted}
+        >
           {loading ? "Searching..." : "Search"}
         </Button>
       </div>
