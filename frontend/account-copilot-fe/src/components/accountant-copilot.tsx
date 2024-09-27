@@ -531,8 +531,9 @@ export function AccountantCopilot() {
             <DialogTitle>Out of Queries</DialogTitle>
           </DialogHeader>
           <p>
-            You've reached the maximum number of queries for today. Please come
-            back tomorrow or upgrade your plan to continue asking questions.
+            You&apos;ve reached the maximum number of queries for today. Please
+            come back tomorrow or upgrade your plan to continue asking
+            questions.
           </p>
           <DialogFooter>
             <Button onClick={() => setShowCreditDialog(false)}>Close</Button>
