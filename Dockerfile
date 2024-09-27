@@ -6,7 +6,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
-WORKDIR /app
+WORKDIR .
 
 # Upgrade pip
 RUN pip install --no-cache-dir --upgrade pip
