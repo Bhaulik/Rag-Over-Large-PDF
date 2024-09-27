@@ -10,7 +10,7 @@ from langchain_community.vectorstores import FAISS
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 
 # Configure logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Load environment variables
 load_dotenv()
@@ -34,33 +34,55 @@ def process_xml_file(file_path: str) -> Tuple[str, Dict[str, str]]:
     Process the XML file and return its content as plain text along with a reference dictionary.
     """
     try:
+        logging.info(f"Attempting to parse XML file: {file_path}")
         tree = ET.parse(file_path)
         root = tree.getroot()
+        logging.info(f"XML file parsed successfully. Root tag: {root.tag}")
 
         plain_text = []
         reference_dict = {}
 
-        for elem in root.iter():
-            if elem.tag in ['h1', 'h2', 'h3', 'h4', 'h5', 'h6']:
-                header_text = elem.text.strip() if elem.text else ''
-                reference_dict[header_text] = f"{elem.tag} {header_text}"
-            if elem.text:
-                plain_text.append(elem.text.strip())
+        def process_element(elem, path=""):
+            logging.debug(f"Processing element: {elem.tag}")
+            if elem.tag in ['Heading', 'Section', 'Subsection', 'Paragraph', 'Subparagraph', 'Clause', 'Label', 'Text', 'TitleText', 'MarginalNote']:
+                text = elem.text.strip() if elem.text else ""
+                if text:
+                    if elem.tag == 'Label':
+                        new_path = f"{path}{text}."
+                        reference_dict[new_path.rstrip('.')] = new_path.rstrip('.')
+                        logging.debug(f"Added reference: {new_path.rstrip('.')}")
+                    else:
+                        full_text = f"{path}{text}"
+                        plain_text.append(full_text)
+                        logging.debug(f"Added text: {full_text[:50]}...")
 
+            for child in elem:
+                if elem.tag == 'Label':
+                    process_element(child, path + elem.text + ".")
+                else:
+                    process_element(child, path)
+
+        process_element(root)
         plain_text = "\n".join(plain_text)
         
+        logging.info(f"XML processing complete. Plain text length: {len(plain_text)}, References: {len(reference_dict)}")
         return plain_text, reference_dict
+    except ET.ParseError as e:
+        logging.error(f"XML parsing error: {e}")
+        return "", {}
     except Exception as e:
         logging.error(f"Error processing XML file: {e}")
         return "", {}
-
+    
 def create_vector_store(text_content: str, reference_dict: Dict[str, str]) -> FAISS:
     """
     Create a vector store from the text content with metadata.
     """
     try:
+        logging.info("Creating vector store...")
         text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
         chunks = text_splitter.split_text(text_content)
+        logging.info(f"Text split into {len(chunks)} chunks")
         
         documents = []
         current_reference = None
@@ -80,6 +102,7 @@ def create_vector_store(text_content: str, reference_dict: Dict[str, str]) -> FA
             logging.debug(f"Chunk: {chunk[:100]}... assigned to reference: {current_reference}")
         
         vectorstore = FAISS.from_texts([doc["content"] for doc in documents], embeddings, metadatas=[doc["metadata"] for doc in documents])
+        logging.info("Vector store created successfully")
         return vectorstore
     except Exception as e:
         logging.error(f"Error creating vector store: {e}")
@@ -90,7 +113,9 @@ def query_vectorstore(vectorstore: FAISS, query: str, k: int = 5) -> List[Dict]:
     Query the vector store and return results.
     """
     try:
+        logging.info(f"Querying vector store with: {query}")
         results = vectorstore.similarity_search(query, k=k)
+        logging.info(f"Query returned {len(results)} results")
         return results
     except Exception as e:
         logging.error(f"Error querying vector store: {e}")
@@ -118,6 +143,7 @@ def refine_query(query: str) -> str:
     Use OpenAI to refine the user's query for optimal vector database search.
     """
     try:
+        logging.info(f"Refining query: {query}")
         response = client.chat.completions.create(
             model="gpt-4",
             messages=[
@@ -149,6 +175,7 @@ def extract_search_terms(refined_query: str) -> str:
     Extract key search terms from the refined query for vector search.
     """
     try:
+        logging.info(f"Extracting search terms from: {refined_query}")
         response = client.chat.completions.create(
             model="gpt-4",
             messages=[
@@ -197,6 +224,7 @@ def openai_generate_answer(excerpts: List[Dict], query: str) -> str:
     )
 
     try:
+        logging.info("Generating answer with OpenAI")
         response = client.chat.completions.create(
             model="gpt-4",
             messages=[
@@ -206,7 +234,9 @@ def openai_generate_answer(excerpts: List[Dict], query: str) -> str:
             max_tokens=1500,
             temperature=0.2
         )
-        return response.choices[0].message.content.strip()
+        answer = response.choices[0].message.content.strip()
+        logging.info("Answer generated successfully")
+        return answer
     except Exception as e:
         logging.error(f"Error generating response from OpenAI: {e}")
         return None
