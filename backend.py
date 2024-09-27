@@ -9,9 +9,8 @@ from langchain_community.embeddings import OpenAIEmbeddings
 from langchain_community.vectorstores import FAISS
 import logging
 import xml.etree.ElementTree as ET
+from contextlib import asynccontextmanager
 
-
-app = FastAPI()
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -36,6 +35,31 @@ class QueryResponse(BaseModel):
     
 # Initialize OpenAI client
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+# Global variable to store the vector store
+vectorstore = None
+# Path to save and load the vector store
+VECTOR_STORE_PATH = "vector_store.pkl"
+
+def save_vectorstore(vectorstore: FAISS):
+    """
+    Save the vector store to disk.
+    """
+    with open(VECTOR_STORE_PATH, "wb") as f:
+        pickle.dump(vectorstore, f)
+    logging.info(f"Vector store saved to {VECTOR_STORE_PATH}")
+
+def load_vectorstore() -> Optional[FAISS]:
+    """
+    Load the vector store from disk if it exists.
+    """
+    if os.path.exists(VECTOR_STORE_PATH):
+        with open(VECTOR_STORE_PATH, "rb") as f:
+            vectorstore = pickle.load(f)
+        logging.info(f"Vector store loaded from {VECTOR_STORE_PATH}")
+        return vectorstore
+    return None
+
+
 
 # Initialize OpenAI embeddings
 try:
@@ -340,6 +364,19 @@ def main():
             print("I couldn't find relevant information for your query. Please try rephrasing your question.")
         
         print("\nWould you like to ask another question? (Type 'quit' to exit)")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    global vectorstore
+    vectorstore = load_vectorstore()
+    if vectorstore:
+        logging.info("Vector store loaded successfully.")
+    else:
+        logging.info("No existing vector store found. Please process an XML file.")
+    yield
+
+app = FastAPI(lifespan=lifespan)
 
 @app.post("/process_xml")
 async def process_xml(file: UploadFile = File(...)):
