@@ -112,10 +112,12 @@ export function AccountantCopilot() {
         const newResult: SearchResult = {
           query: currentQuery,
           answer: data.answer,
-          excerpts: data.excerpts.map((excerpt: any) => ({
-            content: excerpt.content,
-            reference: excerpt.reference,
-          })),
+          excerpts: data.excerpts.map(
+            (excerpt: { content: string; reference: string }) => ({
+              content: excerpt.content,
+              reference: excerpt.reference,
+            })
+          ),
           followUps: [],
         };
 
@@ -201,10 +203,12 @@ export function AccountantCopilot() {
         const newResult: SearchResult = {
           query: results[index].query,
           answer: data.answer,
-          excerpts: data.excerpts.map((excerpt: any) => ({
-            content: excerpt.content,
-            reference: excerpt.reference,
-          })),
+          excerpts: data.excerpts.map(
+            (excerpt: { content: string; reference: string }) => ({
+              content: excerpt.content,
+              reference: excerpt.reference,
+            })
+          ),
           followUps: [],
         };
 
