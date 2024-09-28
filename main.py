@@ -2,7 +2,7 @@ import os
 from fastapi import FastAPI, HTTPException, UploadFile, File
 from pydantic import BaseModel
 from dotenv import load_dotenv
-from openai import OpenAI
+from langchain_openai import OpenAIEmbeddings, OpenAI
 from typing import List, Dict, Optional, Tuple
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.embeddings import OpenAIEmbeddings
