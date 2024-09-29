@@ -37,17 +37,22 @@ async function fetchWithRetry(
 ): Promise<Response> {
   for (let i = 0; i < maxRetries; i++) {
     try {
-      return await fetchWithCustomTimeout(url, options, timeout);
+      console.log(`Attempt ${i + 1} of ${maxRetries}`);
+      const response = await fetchWithCustomTimeout(url, options, timeout);
+      console.log(`Attempt ${i + 1} successful`);
+      return response;
     } catch (error) {
+      console.error(`Attempt ${i + 1} failed:`, error);
       if (i === maxRetries - 1) throw error;
-      console.log(`Retry attempt ${i + 1} of ${maxRetries}`);
-      await new Promise((resolve) => setTimeout(resolve, 1000)); // Wait 1 second before retrying
+      console.log(`Waiting before retry attempt ${i + 2} of ${maxRetries}`);
+      await new Promise((resolve) => setTimeout(resolve, 2000)); // Wait 2 seconds before retrying
     }
   }
   throw new Error("Max retries reached");
 }
 
 export async function POST(request: Request) {
+  const startTime = Date.now();
   try {
     const body = await request.json();
     const backendUrl = "https://manual-marti-bhaulik-70305df9.koyeb.app/query";
@@ -55,7 +60,6 @@ export async function POST(request: Request) {
     console.log("Request Body:", JSON.stringify(body));
 
     console.log(`Sending request to ${backendUrl}`);
-    const startTime = Date.now();
 
     const response = await fetchWithRetry(
       backendUrl,
@@ -66,8 +70,8 @@ export async function POST(request: Request) {
         },
         body: JSON.stringify(body),
       },
-      30000, // 30 seconds timeout
-      3 // 3 retry attempts
+      60000, // 60 seconds timeout
+      5 // 5 retry attempts
     );
 
     console.log(`Request completed in ${Date.now() - startTime}ms`);
@@ -82,7 +86,10 @@ export async function POST(request: Request) {
     const data = await response.json();
     return NextResponse.json(data);
   } catch (error) {
-    console.error("Error processing query:", error);
+    console.error(
+      `Error processing query after ${Date.now() - startTime}ms:`,
+      error
+    );
     let errorMessage = "Failed to process query";
     let statusCode = 500;
 
