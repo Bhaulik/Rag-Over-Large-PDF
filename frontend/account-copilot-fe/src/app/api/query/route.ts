@@ -7,7 +7,7 @@ export async function POST(request: Request) {
     const backendUrl = "https://manual-marti-bhaulik-70305df9.koyeb.app/query";
     console.log("Backend URL:", backendUrl);
     console.log("Body:", JSON.stringify(body));
-    const response = await fetch(`${backendUrl}/query`, {
+    const response = await fetch(`${backendUrl}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
