@@ -6,7 +6,6 @@ const fetchWithCustomTimeout = (
   timeout?: number
 ): Promise<Response> => {
   if (timeout === undefined) {
-    // No timeout specified, use regular fetch without a timeout
     return fetch(url, options);
   }
 
@@ -30,14 +29,35 @@ const fetchWithCustomTimeout = (
     });
 };
 
+async function fetchWithRetry(
+  url: string,
+  options: RequestInit,
+  timeout: number,
+  maxRetries = 3
+): Promise<Response> {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      return await fetchWithCustomTimeout(url, options, timeout);
+    } catch (error) {
+      if (i === maxRetries - 1) throw error;
+      console.log(`Retry attempt ${i + 1} of ${maxRetries}`);
+      await new Promise((resolve) => setTimeout(resolve, 1000)); // Wait 1 second before retrying
+    }
+  }
+  throw new Error("Max retries reached");
+}
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
     const backendUrl = "https://manual-marti-bhaulik-70305df9.koyeb.app/query";
     console.log("Backend URL:", backendUrl);
-    console.log("Body:", JSON.stringify(body));
+    console.log("Request Body:", JSON.stringify(body));
 
-    const response = await fetchWithCustomTimeout(
+    console.log(`Sending request to ${backendUrl}`);
+    const startTime = Date.now();
+
+    const response = await fetchWithRetry(
       backendUrl,
       {
         method: "POST",
@@ -46,8 +66,11 @@ export async function POST(request: Request) {
         },
         body: JSON.stringify(body),
       },
-      undefined // Set to undefined for unlimited timeout, or specify a number in milliseconds for a timed request
+      30000, // 30 seconds timeout
+      3 // 3 retry attempts
     );
+
+    console.log(`Request completed in ${Date.now() - startTime}ms`);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -67,9 +90,14 @@ export async function POST(request: Request) {
       errorMessage = error.message;
       if (errorMessage.includes("timed out")) {
         statusCode = 504; // Gateway Timeout
+      } else if (errorMessage.includes("Failed to fetch")) {
+        statusCode = 503; // Service Unavailable
       }
     }
 
+    console.error(
+      `Error details: Status ${statusCode}, Message: ${errorMessage}`
+    );
     return NextResponse.json({ error: errorMessage }, { status: statusCode });
   }
 }
