@@ -1,10 +1,15 @@
 import { NextResponse } from "next/server";
 
-const fetchWithTimeout = (
+const fetchWithCustomTimeout = (
   url: string,
   options: RequestInit,
-  timeout = 120000
+  timeout?: number
 ): Promise<Response> => {
+  if (timeout === undefined) {
+    // No timeout specified, use regular fetch without a timeout
+    return fetch(url, options);
+  }
+
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort(), timeout);
 
@@ -32,7 +37,7 @@ export async function POST(request: Request) {
     console.log("Backend URL:", backendUrl);
     console.log("Body:", JSON.stringify(body));
 
-    const response = await fetchWithTimeout(
+    const response = await fetchWithCustomTimeout(
       backendUrl,
       {
         method: "POST",
@@ -41,7 +46,7 @@ export async function POST(request: Request) {
         },
         body: JSON.stringify(body),
       },
-      180000 // 3 minute timeout
+      undefined // Set to undefined for unlimited timeout, or specify a number in milliseconds for a timed request
     );
 
     if (!response.ok) {
