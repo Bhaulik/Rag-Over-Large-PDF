@@ -4,7 +4,7 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     // const backendUrl = process.env.BACK_END_KEY || "http://0.0.0.0:8000";
-    var backendUrl = "https://manual-marti-bhaulik-70305df9.koyeb.app/query";
+    let backendUrl = "https://manual-marti-bhaulik-70305df9.koyeb.app/query";
     console.log("Backend URL:", backendUrl);
     console.log("Body:", JSON.stringify(body));
     const response = await fetch(`${backendUrl}/query`, {
