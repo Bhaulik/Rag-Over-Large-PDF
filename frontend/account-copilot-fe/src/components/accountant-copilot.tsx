@@ -98,11 +98,16 @@ export function AccountantCopilot() {
         setLoadingStep("summarizing");
 
         // TODO: Replace with actual API call
-        const response = await fetch("/api/query", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ query: currentQuery, top_k: 5 }),
-        });
+        const response = await fetch(
+          "https://manual-marti-bhaulik-70305df9.koyeb.app/query",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ query: currentQuery, top_k: 5 }),
+            mode: "no-cors",
+          }
+        );
+        console.log("Response:", response);
 
         if (!response.ok) {
           throw new Error("Network response was not ok");
