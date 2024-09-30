@@ -92,10 +92,10 @@ export function AccountantCopilot() {
       setLoadingStep("reading");
       try {
         // Simulating API call with timeout
-        await new Promise((resolve) => setTimeout(resolve, 2000));
-        setLoadingStep("referencing");
-        await new Promise((resolve) => setTimeout(resolve, 2000));
-        setLoadingStep("summarizing");
+        // await new Promise((resolve) => setTimeout(resolve, 2000));
+        // setLoadingStep("referencing");
+        // await new Promise((resolve) => setTimeout(resolve, 2000));
+        // setLoadingStep("summarizing");
 
         // TODO: Replace with actual API call
         const response = await fetch(
@@ -104,7 +104,7 @@ export function AccountantCopilot() {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ query: currentQuery, top_k: 5 }),
-            mode: "no-cors",
+            // Remove the mode: "no-cors" line
           }
         );
         console.log("Response:", response);
