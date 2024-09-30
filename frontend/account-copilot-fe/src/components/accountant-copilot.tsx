@@ -91,22 +91,15 @@ export function AccountantCopilot() {
       setLoading(true);
       setLoadingStep("reading");
       try {
-        // Simulating API call with timeout
-        // await new Promise((resolve) => setTimeout(resolve, 2000));
-        // setLoadingStep("referencing");
-        // await new Promise((resolve) => setTimeout(resolve, 2000));
-        // setLoadingStep("summarizing");
+        const targetUrl =
+          "https://manual-marti-bhaulik-70305df9.koyeb.app/query";
 
-        // TODO: Replace with actual API call
-        const response = await fetch(
-          "https://manual-marti-bhaulik-70305df9.koyeb.app/query",
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ query: currentQuery, top_k: 5 }),
-            // Remove the mode: "no-cors" line
-          }
-        );
+        const response = await fetch(targetUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query: currentQuery, top_k: 5 }),
+        });
+
         console.log("Response:", response);
 
         if (!response.ok) {
